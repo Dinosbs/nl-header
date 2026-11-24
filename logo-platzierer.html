@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logo-Platzierer</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f4f4f5;
+    --panel: #ffffff;
+    --text: #18181b;
+    --muted: #71717a;
+    --line: #e4e4e7;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-soft: rgba(37, 99, 235, .08);
+    --warn-bg: #fef3c7;
+    --warn-text: #854d0e;
+    --err-bg: #fee2e2;
+    --err-text: #991b1b;
+    --guide: rgba(37, 99, 235, .6);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #18181b;
+      --panel: #232327;
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --line: #3f3f46;
+      --accent: #3b82f6;
+      --accent-hover: #60a5fa;
+      --accent-soft: rgba(59, 130, 246, .12);
+      --warn-bg: #422006;
+      --warn-text: #fde68a;
+      --err-bg: #450a0a;
+      --err-text: #fecaca;
+      --guide: rgba(96, 165, 250, .75);
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 28px 16px 64px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 20px; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .controls { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+  .field output { color: var(--text); font-weight: 600; margin-left: 4px; }
+  .field small { font-size: 12px; }
+  .field input[type="range"] { width: 180px; }
+  .field input[type="number"] { width: 100px; }
+  select, input[type="number"] {
+    font: inherit; color: var(--text); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px;
+  }
+  input[type="color"] { width: 48px; height: 34px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+  .check { display: flex; align-items: center; gap: 6px; font-size: 14px; padding-bottom: 6px; }
+  details.advanced { flex-basis: 100%; border-top: 1px solid var(--line); padding-top: 10px; }
+  details.advanced > .controls { margin-top: 12px; }
+  summary { cursor: pointer; font-size: 14px; color: var(--muted); }
+  button {
+    font: inherit; border-radius: 8px; padding: 7px 14px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--panel); color: var(--text);
+  }
+  button:hover { border-color: var(--muted); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  button.icon { padding: 2px 10px; font-size: 18px; line-height: 1.2; color: var(--muted); }
+
+  .drop {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    margin: 16px 0; padding: 36px 16px; text-align: center; cursor: pointer;
+    border: 2px dashed var(--line); border-radius: 12px; background: var(--panel);
+    transition: border-color .15s, background .15s;
+  }
+  .drop strong { font-size: 17px; }
+  .drop span { color: var(--muted); font-size: 13px; }
+  .drop:hover, .drop:focus-visible, body.dragging .drop { border-color: var(--accent); background: var(--accent-soft); outline: none; }
+
+  .bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .bulk #count { color: var(--muted); margin-right: auto; }
+
+  .results { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: 16px; }
+  .card { display: flex; flex-direction: column; gap: 12px; }
+  .card-head { display: flex; align-items: center; gap: 8px; }
+  .card-head .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card-head .meta { color: var(--muted); font-size: 13px; white-space: nowrap; margin-left: auto; }
+
+  .stage {
+    position: relative; width: 100%; max-width: 400px; aspect-ratio: 200 / 80;
+    border: 1px solid var(--line); overflow: hidden;
+  }
+  .stage canvas, .actual canvas { display: block; width: 100%; height: 100%; }
+  .guide { position: absolute; border: 1px dashed var(--guide); pointer-events: none; }
+  .guides-off .guide { display: none; }
+  .bg-checker {
+    background: repeating-conic-gradient(#e4e4e7 0 25%, #ffffff 0 50%) 0 0 / 16px 16px;
+  }
+  .bg-white { background: #ffffff; }
+  .bg-dark { background: #27272a; }
+
+  .row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 20px; }
+  .actual { margin: 0; }
+  .actual .box { border: 1px solid var(--line); max-width: 100%; }
+  .actual figcaption, .info { font-size: 12px; color: var(--muted); }
+  .actual figcaption { margin-top: 4px; }
+  .tune { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); }
+  .tune input { width: 150px; }
+  .row .primary { margin-left: auto; }
+  .info { margin: 0; }
+  .note { margin: 0; padding: 8px 10px; border-radius: 8px; font-size: 13px; background: var(--warn-bg); color: var(--warn-text); }
+  .card.error { border-color: var(--err-text); }
+  .card.error .note { background: var(--err-bg); color: var(--err-text); }
+
+  details.how { margin-top: 28px; }
+  details.how ol { margin: 12px 0 0; padding-left: 20px; }
+  details.how li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Logo-Platzierer</h1>
+  <p class="lead">Logos reinziehen – sie werden automatisch zugeschnitten und linksbündig mit natürlichem Abstand in ein <span class="size-label">200 × 80</span> px Feld gesetzt.</p>
+
+  <section class="panel controls" aria-label="Einstellungen">
+    <label class="field">
+      <span>Abstand<output id="padOut"></output></span>
+      <input type="range" min="0" max="30" step="1" data-setting="pad">
+    </label>
+    <label class="field">
+      <span>Hintergrund</span>
+      <select data-setting="bg">
+        <option value="auto">Automatisch</option>
+        <option value="transparent">Transparent</option>
+        <option value="white">Weiß</option>
+        <option value="custom">Eigene Farbe …</option>
+      </select>
+    </label>
+    <label class="field" id="colorField">
+      <span>Farbe</span>
+      <input type="color" data-setting="color">
+    </label>
+    <label class="field">
+      <span>Export</span>
+      <select data-setting="scale" data-num>
+        <option value="1" id="scale1">200 × 80 px</option>
+        <option value="2" id="scale2">400 × 160 px (Retina @2x)</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Vorschau auf</span>
+      <select data-setting="preview">
+        <option value="checker">Karomuster (= transparent)</option>
+        <option value="white">Weiß</option>
+        <option value="dark">Dunkel</option>
+      </select>
+    </label>
+    <label class="check"><input type="checkbox" data-setting="guides"> Hilfslinien</label>
+
+    <details class="advanced">
+      <summary>Erweitert</summary>
+      <div class="controls">
+        <label class="field">
+          <span>Feldbreite (px)</span>
+          <input type="number" min="40" max="1000" step="1" data-setting="W">
+        </label>
+        <label class="field">
+          <span>Feldhöhe (px)</span>
+          <input type="number" min="20" max="1000" step="1" data-setting="H">
+        </label>
+        <label class="field">
+          <span>Ausgleich breite Logos<output id="kOut"></output></span>
+          <input type="range" min="0" max="0.6" step="0.05" data-setting="k">
+          <small>0 = alle gleich hoch · 0,5 = gleiche Fläche</small>
+        </label>
+        <label class="check"><input type="checkbox" data-setting="trim"> Leerraum / weißen Rand automatisch entfernen</label>
+        <button type="button" id="reset">Standard wiederherstellen</button>
+      </div>
+    </details>
+  </section>
+
+  <label class="drop" id="drop" tabindex="0">
+    <input type="file" id="file" accept="image/*,.svg" multiple hidden>
+    <strong>Logo(s) hierher ziehen</strong>
+    <span>oder klicken zum Auswählen · Strg+V fügt ein Bild aus der Zwischenablage ein · PNG, JPG, SVG, WebP, GIF</span>
+  </label>
+
+  <div class="bulk" id="bulk" hidden>
+    <span id="count"></span>
+    <button type="button" class="primary" id="downloadAll">Alle herunterladen</button>
+    <button type="button" id="clearAll">Alle entfernen</button>
+  </div>
+  <div class="results" id="results"></div>
+
+  <details class="panel how">
+    <summary>So funktioniert die automatische Platzierung</summary>
+    <ol>
+      <li><b>Zuschneiden:</b> Transparenter Leerraum und weiße Ränder rund um das Logo werden entfernt – gemessen wird nur das eigentliche Logo. Farbige, vollflächige Logos (z.&nbsp;B. ein rotes Quadrat) bleiben unangetastet.</li>
+      <li><b>Größe:</b> Quadratische und hohe Logos nutzen die volle Höhe (Feldhöhe minus Abstand oben und unten). Je breiter ein Logo ist, desto flacher wird es – aber gedämpft, damit breite Schriftzüge nicht winzig werden und quadratische Logos nicht übermächtig wirken. Der Regler <i>Ausgleich breite Logos</i> steuert, wie stark.</li>
+      <li><b>Position:</b> Linksbündig mit dem eingestellten Abstand, vertikal mittig. Sehr breite Logos werden auf die verfügbare Breite begrenzt – rechts bleibt mindestens derselbe Abstand wie links.</li>
+      <li><b>Qualität:</b> Große Vorlagen werden stufenweise verkleinert (scharfe Kanten, kein Flimmern). Ist eine Vorlage zu klein, gibt es einen Hinweis. SVG-Logos werden immer gestochen scharf.</li>
+    </ol>
+  </details>
+</main>
+
+<script>
+'use strict';
+
+/* ------------------------------------------------------------------ *
+ * Einstellungen
+ * ------------------------------------------------------------------ */
+const SVG_RENDER_SIZE = 2048;  // SVGs werden in dieser Größe gerastert
+const MAX_SOURCE_SIZE = 4096;  // riesige Bilder werden vorab verkleinert
+const CROP_LIMIT = 2000;       // Arbeitskopie des zugeschnittenen Logos
+const STORAGE_KEY = 'logo-platzierer.v1';
+
+const DEFAULTS = {
+  W: 200,           // Feldbreite
+  H: 80,            // Feldhöhe
+  pad: 12,          // Abstand links / oben / unten (Mindestabstand rechts)
+  k: 0.3,           // Ausgleich: 0 = gleiche Höhe, 0.5 = gleiche Fläche
+  trim: true,       // Leerraum automatisch entfernen
+  bg: 'auto',       // auto | transparent | white | custom
+  color: '#ffffff',
+  scale: 1,         // 1 = 200×80, 2 = 400×160 (Retina)
+  preview: 'checker',
+  guides: true,
+};
+
+let settings = loadSettings();
+const logos = [];
+let uid = 0;
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    return { ...DEFAULTS, ...saved };
+  } catch {
+    return { ...DEFAULTS };
+  }
+}
+function saveSettings() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch { /* egal */ }
+}
+
+/* ------------------------------------------------------------------ *
+ * Bild laden
+ * ------------------------------------------------------------------ */
+function makeCanvas(w, h) {
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w));
+  c.height = Math.max(1, Math.round(h));
+  return c;
+}
+
+// Verkleinert schrittweise (halbieren), damit auch starke Verkleinerung sauber aussieht.
+function drawScaled(ctx, src, sx, sy, sw, sh, dx, dy, dw, dh) {
+  let cur = src;
+  while (sw / 2 >= dw && sh / 2 >= dh && sw > 2 && sh > 2) {
+    const nw = Math.round(sw / 2), nh = Math.round(sh / 2);
+    const c = makeCanvas(nw, nh);
+    const cctx = c.getContext('2d');
+    cctx.imageSmoothingEnabled = true;
+    cctx.imageSmoothingQuality = 'high';
+    cctx.drawImage(cur, sx, sy, sw, sh, 0, 0, nw, nh);
+    cur = c; sx = 0; sy = 0; sw = nw; sh = nh;
+  }
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(cur, sx, sy, sw, sh, dx, dy, dw, dh);
+}
+
+const UNIT_PX = { px: 1, pt: 4 / 3, pc: 16, mm: 96 / 25.4, cm: 96 / 2.54, in: 96, em: 16, ex: 8 };
+function svgLength(value) {
+  const m = /^\s*([\d.]+(?:e[-+]?\d+)?)\s*([a-z%]*)\s*$/i.exec(value || '');
+  if (!m || m[2] === '%') return 0;
+  const f = UNIT_PX[(m[2] || 'px').toLowerCase()];
+  return f ? parseFloat(m[1]) * f : 0;
+}
+
+// SVGs auf eine feste, große Rastergröße bringen (manche haben nur eine viewBox).
+function prepareSvg(text) {
+  const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+  const svg = doc.documentElement;
+  if (!svg || svg.localName !== 'svg' || doc.getElementsByTagName('parsererror').length) return text;
+
+  let vw = 0, vh = 0;
+  const vb = (svg.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+  if (vb.length === 4 && vb.every(Number.isFinite) && vb[2] > 0 && vb[3] > 0) {
+    vw = vb[2]; vh = vb[3];
+  } else {
+    const aw = svgLength(svg.getAttribute('width'));
+    const ah = svgLength(svg.getAttribute('height'));
+    if (aw > 0 && ah > 0) {
+      vw = aw; vh = ah;
+      svg.setAttribute('viewBox', `0 0 ${aw} ${ah}`);
+    } else {
+      vw = vh = 1; // unbekannt → quadratisch, Leerraum wird später entfernt
+    }
+  }
+  const f = SVG_RENDER_SIZE / Math.max(vw, vh);
+  svg.setAttribute('width', Math.max(1, Math.round(vw * f)));
+  svg.setAttribute('height', Math.max(1, Math.round(vh * f)));
+  return new XMLSerializer().serializeToString(doc);
+}
+
+async function loadLogo(file) {
+  const isSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name);
+  const blob = isSvg ? new Blob([prepareSvg(await file.text())], { type: 'image/svg+xml' }) : file;
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = new Image();
+    img.src = url;
+    try { await img.decode(); } catch { throw new Error('Datei konnte nicht als Bild gelesen werden. Bitte PNG, JPG, SVG oder WebP verwenden.'); }
+
+    const w = img.naturalWidth || SVG_RENDER_SIZE;
+    const h = img.naturalHeight || SVG_RENDER_SIZE;
+    const f = Math.min(1, MAX_SOURCE_SIZE / Math.max(w, h));
+    const src = makeCanvas(w * f, h * f);
+    drawScaled(src.getContext('2d', { willReadFrequently: true }), img, 0, 0, w, h, 0, 0, src.width, src.height);
+
+    const logo = { id: ++uid, name: file.name || 'logo.png', vector: isSvg, src, analysis: analyze(src), adjust: 1 };
+    updateCrop(logo);
+    return logo;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Analyse: Wo ist das eigentliche Logo?
+ * ------------------------------------------------------------------ */
+function analyze(canvas) {
+  const w = canvas.width, h = canvas.height, n = w * h;
+  const d = canvas.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, w, h).data;
+
+  let transparent = 0;
+  for (let i = 3; i < d.length; i += 4) if (d[i] < 128) transparent++;
+
+  let mode, bg = null, isContent = null;
+  if (transparent > n * 0.005) {
+    // Logo mit transparentem Hintergrund
+    mode = 'alpha';
+    isContent = i => d[i + 3] >= 16;
+  } else {
+    bg = borderColor(d, w, h);
+    if (bg && Math.min(...bg) >= 200) {
+      // heller, einfarbiger Rand (z. B. JPG auf Weiß) → das ist "Papier", nicht Logo
+      mode = 'light-bg';
+      const T = 32;
+      isContent = i => d[i + 3] >= 16 && (
+        Math.abs(d[i] - bg[0]) > T || Math.abs(d[i + 1] - bg[1]) > T || Math.abs(d[i + 2] - bg[2]) > T);
+    } else {
+      // vollflächig/farbig (z. B. App-Icon) → gehört zum Logo, nicht beschneiden
+      mode = 'solid';
+      bg = null;
+    }
+  }
+
+  const full = { x: 0, y: 0, w, h };
+  let box = full;
+  if (isContent) {
+    let minX = w, minY = h, maxX = -1, maxY = -1;
+    for (let y = 0; y < h; y++) {
+      const row = y * w * 4;
+      let first = -1, last = -1;
+      for (let x = 0; x < w; x++) if (isContent(row + x * 4)) { first = x; break; }
+      if (first < 0) continue;
+      for (let x = w - 1; x >= first; x--) if (isContent(row + x * 4)) { last = x; break; }
+      if (first < minX) minX = first;
+      if (last > maxX) maxX = last;
+      if (y < minY) minY = y;
+      maxY = y;
+    }
+    if (maxX >= 0) box = { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+  }
+  return { mode, bg, box, full };
+}
+
+// Häufigste Farbe am Bildrand – wenn sie den Rand dominiert, ist sie Hintergrund.
+function borderColor(d, w, h) {
+  const idx = [];
+  for (let x = 0; x < w; x++) idx.push(x * 4, ((h - 1) * w + x) * 4);
+  for (let y = 1; y < h - 1; y++) idx.push(y * w * 4, (y * w + w - 1) * 4);
+  const key = i => ((d[i] >> 4) << 8) | ((d[i + 1] >> 4) << 4) | (d[i + 2] >> 4);
+  const counts = new Map();
+  for (const i of idx) { const k = key(i); counts.set(k, (counts.get(k) || 0) + 1); }
+  let bestKey = -1, best = 0;
+  for (const [k, c] of counts) if (c > best) { best = c; bestKey = k; }
+  if (best < idx.length * 0.5) return null;
+  let r = 0, g = 0, b = 0;
+  for (const i of idx) if (key(i) === bestKey) { r += d[i]; g += d[i + 1]; b += d[i + 2]; }
+  return [Math.round(r / best), Math.round(g / best), Math.round(b / best)];
+}
+
+// Zugeschnittene, moderat verkleinerte Arbeitskopie → schnelle Vorschau beim Regeln.
+function updateCrop(logo) {
+  const box = settings.trim ? logo.analysis.box : logo.analysis.full;
+  const f = Math.min(1, CROP_LIMIT / Math.max(box.w, box.h));
+  const c = makeCanvas(box.w * f, box.h * f);
+  drawScaled(c.getContext('2d'), logo.src, box.x, box.y, box.w, box.h, 0, 0, c.width, c.height);
+  logo.box = box;
+  logo.crop = c;
+}
+
+/* ------------------------------------------------------------------ *
+ * Layout: das "intelligente" Platzieren
+ * ------------------------------------------------------------------ */
+function computeLayout(ratio, adjust = 1) {
+  const { W, H, k } = settings;
+  const pad = Math.max(0, Math.min(settings.pad, (H - 8) / 2, (W - 8) / 2));
+  const maxW = W - 2 * pad;   // rechts mindestens derselbe Abstand wie links
+  const maxH = H - 2 * pad;   // oben und unten Abstand
+
+  // Quadratisch/hoch: volle Höhe. Breiter: Höhe sinkt gedämpft mit ratio^k.
+  let h = maxH / Math.pow(Math.max(ratio, 1), k);
+  let w = h * ratio;
+  if (w > maxW) { w = maxW; h = w / ratio; }
+
+  // manuelle Feinjustierung pro Logo
+  if (adjust !== 1) {
+    w *= adjust; h *= adjust;
+    const fit = Math.min(1, (W - pad - 2) / w, (H - 4) / h);
+    w *= fit; h *= fit;
+  }
+  return { x: pad, y: (H - h) / 2, w, h };
+}
+
+function fillFor(logo) {
+  switch (settings.bg) {
+    case 'transparent': return null;
+    case 'white': return '#ffffff';
+    case 'custom': return settings.color;
+    default: return logo.analysis.mode === 'light-bg' ? rgbHex(logo.analysis.bg) : null;
+  }
+}
+
+// Zeichnet das Ergebnis in `canvas` (Feldgröße × scale) und liefert die Maße zurück.
+function renderInto(canvas, logo, scale) {
+  const W = Math.round(settings.W * scale), H = Math.round(settings.H * scale);
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  const fill = fillFor(logo);
+  if (fill) { ctx.fillStyle = fill; ctx.fillRect(0, 0, W, H); }
+
+  const L = computeLayout(logo.box.w / logo.box.h, logo.adjust);
+  const dw = Math.max(1, Math.round(L.w * scale));
+  const dh = Math.max(1, Math.round(L.h * scale));
+  const dx = Math.round(L.x * scale);
+  const dy = Math.round((H - dh) / 2);
+  drawScaled(ctx, logo.crop, 0, 0, logo.crop.width, logo.crop.height, dx, dy, dw, dh);
+  return { dx, dy, dw, dh, W, H, scale };
+}
+
+/* ------------------------------------------------------------------ *
+ * Oberfläche
+ * ------------------------------------------------------------------ */
+const nf = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 });
+const fmt = n => nf.format(n);
+const rgbHex = c => '#' + c.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+
+function ratioText(r) {
+  return r >= 1 ? `${fmt(r)} : 1` : `1 : ${fmt(1 / r)}`;
+}
+
+function modeText(logo) {
+  const a = logo.analysis;
+  if (!settings.trim) return 'unbeschnitten';
+  if (a.mode === 'alpha') return 'transparenter Hintergrund';
+  if (a.mode === 'light-bg') return `heller Hintergrund ${rgbHex(a.bg)} entfernt`;
+  return 'vollflächig – nicht beschnitten';
+}
+
+function createCard(logo) {
+  const el = document.createElement('article');
+  el.className = 'panel card';
+  el.innerHTML = `
+    <div class="card-head">
+      <span class="name"></span>
+      <span class="meta"></span>
+      <button type="button" class="icon" title="Entfernen" aria-label="Entfernen">×</button>
+    </div>
+    <div class="stage"><canvas></canvas><div class="guide"></div></div>
+    <div class="row">
+      <figure class="actual">
+        <div class="box"><canvas></canvas></div>
+        <figcaption>Originalgröße</figcaption>
+      </figure>
+      <label class="tune">
+        <span>Feinjustierung Größe: <b class="adj">100 %</b></span>
+        <input type="range" min="70" max="130" step="1" value="100">
+      </label>
+      <button type="button" class="primary">PNG herunterladen</button>
+    </div>
+    <p class="info"></p>
+    <p class="note" hidden></p>`;
+  $('.name', el).textContent = logo.name;
+  $('.name', el).title = logo.name;
+  $('.icon', el).addEventListener('click', () => removeLogo(logo));
+  $('.primary', el).addEventListener('click', () => download(logo));
+  const tune = $('.tune input', el);
+  tune.addEventListener('input', () => { logo.adjust = tune.value / 100; renderCard(logo); });
+  tune.addEventListener('dblclick', () => { tune.value = 100; logo.adjust = 1; renderCard(logo); });
+  logo.el = el;
+  $('#results').append(el);
+}
+
+function renderCard(logo) {
+  const el = logo.el;
+  const { W, H, pad } = settings;
+
+  // große Vorschau (scharf auf hochauflösenden Bildschirmen)
+  const stage = $('.stage', el);
+  stage.className = `stage bg-${settings.preview}${settings.guides ? '' : ' guides-off'}`;
+  stage.style.aspectRatio = `${W} / ${H}`;
+  stage.style.maxWidth = Math.min(2 * W, 800) + 'px';
+  const ps = Math.min(2 * (window.devicePixelRatio || 1), 1600 / W);
+  renderInto($('canvas', stage), logo, ps);
+  const p = Math.max(0, Math.min(pad, (H - 8) / 2, (W - 8) / 2));
+  Object.assign($('.guide', stage).style, {
+    left: `${p / W * 100}%`, right: `${p / W * 100}%`,
+    top: `${p / H * 100}%`, bottom: `${p / H * 100}%`,
+  });
+
+  // Originalgröße = exakt die Exportdatei
+  const box = $('.actual .box', el);
+  box.className = `box bg-${settings.preview}`;
+  box.style.width = W + 'px';
+  box.style.aspectRatio = `${W} / ${H}`;
+  const r = renderInto($('.actual canvas', el), logo, settings.scale);
+
+  // Infos
+  const ratio = logo.box.w / logo.box.h;
+  $('.meta', el).textContent = `Seitenverhältnis ${ratioText(ratio)}`;
+  $('.adj', el).textContent = `${Math.round(logo.adjust * 100)} %`;
+  const s = r.scale;
+  const lw = r.dw / s, lh = r.dh / s, left = r.dx / s, top = r.dy / s;
+  $('.info', el).textContent =
+    `Logo ${fmt(lw)} × ${fmt(lh)} px · Abstand links ${fmt(left)}, oben ${fmt(top)}, ` +
+    `unten ${fmt(H - top - lh)}, rechts ${fmt(W - left - lw)} px · ${modeText(logo)}`;
+
+  // Hinweise
+  const notes = [];
+  if (!logo.vector && (r.dw > logo.box.w * 1.05 || r.dh > logo.box.h * 1.05)) {
+    notes.push(`Die Vorlage ist mit ${logo.box.w} × ${logo.box.h} px kleiner als nötig (${r.dw} × ${r.dh} px) ` +
+      `und wird hochskaliert – das kann unscharf aussehen. Besser eine größere Datei oder ein SVG verwenden.`);
+  }
+  if (lh < 18) {
+    notes.push(`Sehr breites Logo: nur ${fmt(lh)} px hoch – eventuell schlecht lesbar.`);
+  }
+  const note = $('.note', el);
+  note.hidden = !notes.length;
+  note.textContent = notes.join(' ');
+}
+
+function renderAll() {
+  logos.forEach(renderCard);
+  const n = logos.length;
+  $('#bulk').hidden = n === 0;
+  $('#count').textContent = n === 1 ? '1 Logo' : `${n} Logos`;
+}
+
+function syncControls() {
+  for (const input of $$('[data-setting]')) {
+    const v = settings[input.dataset.setting];
+    if (input.type === 'checkbox') input.checked = !!v; else input.value = v;
+  }
+  $('#padOut').textContent = `${settings.pad} px`;
+  $('#kOut').textContent = fmt(settings.k);
+  $('#colorField').hidden = settings.bg !== 'custom';
+  const { W, H } = settings;
+  $('#scale1').textContent = `${W} × ${H} px`;
+  $('#scale2').textContent = `${W * 2} × ${H * 2} px (Retina @2x)`;
+  $$('.size-label').forEach(e => { e.textContent = `${W} × ${H}`; });
+}
+
+const LIMITS = { W: [40, 1000], H: [20, 1000], pad: [0, 30], k: [0, 0.6] };
+
+function onSettingChange(e) {
+  const input = e.target;
+  const key = input.dataset.setting;
+  let v;
+  if (input.type === 'checkbox') v = input.checked;
+  else if (input.type === 'range' || input.type === 'number' || 'num' in input.dataset) v = Number(input.value);
+  else v = input.value;
+
+  if (LIMITS[key]) {
+    const [lo, hi] = LIMITS[key];
+    if (!Number.isFinite(v) || input.value === '') return;
+    if (v < lo || v > hi) {
+      if (e.type !== 'change') return;  // während des Tippens nicht eingreifen
+      v = Math.min(hi, Math.max(lo, v));
+    }
+  }
+  settings[key] = v;
+  saveSettings();
+  if (key === 'trim') logos.forEach(updateCrop);
+  syncControls();
+  renderAll();
+}
+
+/* ------------------------------------------------------------------ *
+ * Dateien, Download
+ * ------------------------------------------------------------------ */
+async function addFiles(files) {
+  for (const file of files) {
+    try {
+      const logo = await loadLogo(file);
+      logos.push(logo);
+      createCard(logo);
+    } catch (err) {
+      showError(file.name, err.message);
+    }
+  }
+  renderAll();
+}
+
+function showError(name, message) {
+  const el = document.createElement('article');
+  el.className = 'panel card error';
+  el.innerHTML = `<div class="card-head"><span class="name"></span><button type="button" class="icon" aria-label="Schließen">×</button></div><p class="note"></p>`;
+  $('.name', el).textContent = name;
+  $('.note', el).textContent = message;
+  $('.icon', el).addEventListener('click', () => el.remove());
+  $('#results').prepend(el);
+}
+
+function removeLogo(logo) {
+  logos.splice(logos.indexOf(logo), 1);
+  logo.el.remove();
+  renderAll();
+}
+
+function fileName(logo) {
+  const base = logo.name.replace(/\.[^.]+$/, '').replace(/[^\w\-äöüÄÖÜß ]+/g, '_').trim() || 'logo';
+  return `${base}_${settings.W}x${settings.H}${settings.scale > 1 ? '@2x' : ''}.png`;
+}
+
+function download(logo) {
+  const c = document.createElement('canvas');
+  renderInto(c, logo, settings.scale);
+  return new Promise(resolve => c.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName(logo);
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    resolve();
+  }, 'image/png'));
+}
+
+async function downloadAll() {
+  for (const logo of logos) {
+    await download(logo);
+    await new Promise(r => setTimeout(r, 350)); // Browser mögen keine Download-Salven
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Start
+ * ------------------------------------------------------------------ */
+syncControls();
+for (const input of $$('[data-setting]')) {
+  input.addEventListener('input', onSettingChange);
+  input.addEventListener('change', onSettingChange);
+}
+$('#reset').addEventListener('click', () => {
+  settings = { ...DEFAULTS };
+  saveSettings();
+  logos.forEach(updateCrop);
+  syncControls();
+  renderAll();
+});
+
+const fileInput = $('#file');
+fileInput.addEventListener('change', () => { addFiles([...fileInput.files]); fileInput.value = ''; });
+$('#drop').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+});
+
+let dragDepth = 0;
+window.addEventListener('dragenter', e => { e.preventDefault(); dragDepth++; document.body.classList.add('dragging'); });
+window.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; document.body.classList.remove('dragging'); } });
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => {
+  e.preventDefault();
+  dragDepth = 0;
+  document.body.classList.remove('dragging');
+  if (e.dataTransfer?.files?.length) addFiles([...e.dataTransfer.files]);
+});
+window.addEventListener('paste', e => {
+  const files = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith('image/'));
+  if (!files.length) return;
+  e.preventDefault();
+  addFiles(files.map((f, i) =>
+    f.name && f.name !== 'image.png' ? f : new File([f], `eingefuegt-${uid + i + 1}.png`, { type: f.type })));
+});
+
+$('#downloadAll').addEventListener('click', downloadAll);
+$('#clearAll').addEventListener('click', () => {
+  logos.splice(0).forEach(l => l.el.remove());
+  $$('#results .error').forEach(e => e.remove());
+  renderAll();
+});
+</script>
+</body>
+</html>
