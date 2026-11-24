@@ -12,7 +12,7 @@ Läuft komplett lokal im Browser, ohne Installation und ohne Upload ins Internet
 2. Repository herunterladen (in einem beliebigen Ordner, z. B. per Rechtsklick → „Open Git Bash here“):
 
    ```bash
-   git clone https://github.com/Dinosbs/nl-header.git
+   git clone -b main https://github.com/Dinosbs/nl-header.git
    ```
 
 ## Benutzung
@@ -25,7 +25,7 @@ Unterstützt: PNG, JPG, SVG, WebP, GIF. Am besten SVG oder große PNGs verwenden
 
 ## Aktualisieren
 
-`update.bat` doppelklicken – holt die neueste Version aus dem Repository (`git pull`).
+`update.bat` doppelklicken – holt die neueste Version vom Branch `main` (`git pull`).
 
 ## So wird platziert
 

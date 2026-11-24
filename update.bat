@@ -18,7 +18,24 @@ if not exist ".git" (
 
 echo Aktualisiere: %CD%
 echo.
-git pull --ff-only
+git fetch origin
+if errorlevel 1 (
+  echo.
+  echo [FEHLER] GitHub nicht erreichbar. Internetverbindung pruefen.
+  goto ende
+)
+
+rem Immer auf dem Branch "main" arbeiten
+git checkout -q main
+if errorlevel 1 (
+  echo.
+  echo [FEHLER] Konnte nicht auf "main" wechseln.
+  echo Haeufigste Ursache: Dateien im Ordner wurden lokal geaendert.
+  echo Mit "git status" pruefen, was geaendert wurde.
+  goto ende
+)
+
+git pull --ff-only origin main
 if errorlevel 1 (
   echo.
   echo [FEHLER] Aktualisierung fehlgeschlagen.
