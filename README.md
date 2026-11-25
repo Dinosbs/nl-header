@@ -19,7 +19,7 @@ Läuft komplett lokal im Browser, ohne Installation und ohne Upload ins Internet
 
 1. `logo-platzierer.html` doppelklicken – öffnet sich im Browser.
 2. Logo(s) ins Fenster ziehen, per Klick auswählen oder mit **Strg+V** einfügen.
-3. **PNG/JPG herunterladen** (oder **Alle herunterladen**). Dateiname: `<logo>_200x80.png` bzw. `.jpg`.
+3. **JPG herunterladen** (oder **Alle herunterladen**). Dateiname: `<logo>_200x80.jpg` (bzw. `.png`, wenn PNG gewählt ist).
 
 Unterstützt: PNG, JPG, SVG, WebP, GIF. Am besten SVG oder große PNGs verwenden.
 
@@ -52,7 +52,7 @@ Ergebnis mit den Standardwerten (Abstand 5 px):
 - **Abstand** – Abstand links/oben/unten (Standard 5 px).
 - **Hintergrund** – Standard *Weiß*. Alternativ *Automatisch* (transparent bzw. Hintergrundfarbe
   des Logos), *Transparent* oder eigene Farbe. JPG hat keine Transparenz – dort wird weiß gefüllt.
-- **Format** – PNG (Standard) oder JPG.
+- **Format** – JPG (Standard) oder PNG.
 - **Export** – 200 × 80 px oder 400 × 160 px (@2x, für scharfe Darstellung auf Retina-Displays).
 - **Feinjustierung Größe** – pro Logo 70–130 %, falls eins optisch zu groß/klein wirkt
   (Doppelklick auf den Regler setzt auf 100 % zurück).

@@ -155,8 +155,8 @@
     <label class="field">
       <span>Format</span>
       <select data-setting="format">
-        <option value="png">PNG</option>
         <option value="jpg">JPG</option>
+        <option value="png">PNG</option>
       </select>
     </label>
     <label class="field">
@@ -231,7 +231,7 @@
 const SVG_RENDER_SIZE = 2048;  // SVGs werden in dieser Größe gerastert
 const MAX_SOURCE_SIZE = 4096;  // riesige Bilder werden vorab verkleinert
 const CROP_LIMIT = 2000;       // Arbeitskopie des zugeschnittenen Logos
-const STORAGE_KEY = 'logo-platzierer.v2';
+const STORAGE_KEY = 'logo-platzierer.v3';
 
 const DEFAULTS = {
   W: 200,           // Feldbreite
@@ -242,7 +242,7 @@ const DEFAULTS = {
   bg: 'white',      // white | auto | transparent | custom
   color: '#ffffff',
   scale: 1,         // 1 = 200×80, 2 = 400×160 (Retina)
-  format: 'png',    // png | jpg
+  format: 'jpg',    // jpg | png
   preview: 'white',
   guides: true,
 };
