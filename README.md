@@ -19,7 +19,7 @@ Läuft komplett lokal im Browser, ohne Installation und ohne Upload ins Internet
 
 1. `logo-platzierer.html` doppelklicken – öffnet sich im Browser.
 2. Logo(s) ins Fenster ziehen, per Klick auswählen oder mit **Strg+V** einfügen.
-3. **PNG herunterladen** (oder **Alle herunterladen**). Dateiname: `<logo>_200x80.png`.
+3. **PNG/JPG herunterladen** (oder **Alle herunterladen**). Dateiname: `<logo>_200x80.png` bzw. `.jpg`.
 
 Unterstützt: PNG, JPG, SVG, WebP, GIF. Am besten SVG oder große PNGs verwenden.
 
@@ -37,22 +37,22 @@ Unterstützt: PNG, JPG, SVG, WebP, GIF. Am besten SVG oder große PNGs verwenden
 3. **Position:** Linksbündig mit Abstand, vertikal mittig. Rechts bleibt mindestens derselbe
    Abstand wie links.
 
-Ergebnis mit den Standardwerten (Abstand 12 px):
+Ergebnis mit den Standardwerten (Abstand 5 px):
 
-| Seitenverhältnis | Logogröße    |
-|------------------|--------------|
-| 1 : 1            | 56 × 56 px   |
-| 2 : 1            | 91 × 45 px   |
-| 3 : 1            | 121 × 40 px  |
-| 4 : 1            | 148 × 37 px  |
-| 5 : 1            | 173 × 35 px  |
-| 6 : 1 und breiter| 176 px breit |
+| Seitenverhältnis  | Logogröße    |
+|-------------------|--------------|
+| 1 : 1             | 70 × 70 px   |
+| 2 : 1             | 114 × 57 px  |
+| 3 : 1             | 151 × 50 px  |
+| 4 : 1             | 185 × 46 px  |
+| 5 : 1 und breiter | 190 px breit |
 
 ## Einstellungen
 
-- **Abstand** – Abstand links/oben/unten (Standard 12 px).
-- **Hintergrund** – *Automatisch* = transparent; bei Logos mit weißem Hintergrund (z. B. JPG)
-  wird dessen Farbe übernommen. Alternativ Transparent, Weiß oder eigene Farbe.
+- **Abstand** – Abstand links/oben/unten (Standard 5 px).
+- **Hintergrund** – Standard *Weiß*. Alternativ *Automatisch* (transparent bzw. Hintergrundfarbe
+  des Logos), *Transparent* oder eigene Farbe. JPG hat keine Transparenz – dort wird weiß gefüllt.
+- **Format** – PNG (Standard) oder JPG.
 - **Export** – 200 × 80 px oder 400 × 160 px (@2x, für scharfe Darstellung auf Retina-Displays).
 - **Feinjustierung Größe** – pro Logo 70–130 %, falls eins optisch zu groß/klein wirkt
   (Doppelklick auf den Regler setzt auf 100 % zurück).

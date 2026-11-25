@@ -142,15 +142,22 @@
     <label class="field">
       <span>Hintergrund</span>
       <select data-setting="bg">
+        <option value="white">Weiß</option>
         <option value="auto">Automatisch</option>
         <option value="transparent">Transparent</option>
-        <option value="white">Weiß</option>
         <option value="custom">Eigene Farbe …</option>
       </select>
     </label>
     <label class="field" id="colorField">
       <span>Farbe</span>
       <input type="color" data-setting="color">
+    </label>
+    <label class="field">
+      <span>Format</span>
+      <select data-setting="format">
+        <option value="png">PNG</option>
+        <option value="jpg">JPG</option>
+      </select>
     </label>
     <label class="field">
       <span>Export</span>
@@ -162,8 +169,8 @@
     <label class="field">
       <span>Vorschau auf</span>
       <select data-setting="preview">
-        <option value="checker">Karomuster (= transparent)</option>
         <option value="white">Weiß</option>
+        <option value="checker">Karomuster (= transparent)</option>
         <option value="dark">Dunkel</option>
       </select>
     </label>
@@ -224,18 +231,19 @@
 const SVG_RENDER_SIZE = 2048;  // SVGs werden in dieser Größe gerastert
 const MAX_SOURCE_SIZE = 4096;  // riesige Bilder werden vorab verkleinert
 const CROP_LIMIT = 2000;       // Arbeitskopie des zugeschnittenen Logos
-const STORAGE_KEY = 'logo-platzierer.v1';
+const STORAGE_KEY = 'logo-platzierer.v2';
 
 const DEFAULTS = {
   W: 200,           // Feldbreite
   H: 80,            // Feldhöhe
-  pad: 12,          // Abstand links / oben / unten (Mindestabstand rechts)
+  pad: 5,           // Abstand links / oben / unten (Mindestabstand rechts)
   k: 0.3,           // Ausgleich: 0 = gleiche Höhe, 0.5 = gleiche Fläche
   trim: true,       // Leerraum automatisch entfernen
-  bg: 'auto',       // auto | transparent | white | custom
+  bg: 'white',      // white | auto | transparent | custom
   color: '#ffffff',
   scale: 1,         // 1 = 200×80, 2 = 400×160 (Retina)
-  preview: 'checker',
+  format: 'png',    // png | jpg
+  preview: 'white',
   guides: true,
 };
 
@@ -442,6 +450,10 @@ function computeLayout(ratio, adjust = 1) {
 }
 
 function fillFor(logo) {
+  const fill = bgFor(logo);
+  return fill || (settings.format === 'jpg' ? '#ffffff' : null); // JPG kennt keine Transparenz
+}
+function bgFor(logo) {
   switch (settings.bg) {
     case 'transparent': return null;
     case 'white': return '#ffffff';
@@ -506,7 +518,7 @@ function createCard(logo) {
         <span>Feinjustierung Größe: <b class="adj">100 %</b></span>
         <input type="range" min="70" max="130" step="1" value="100">
       </label>
-      <button type="button" class="primary">PNG herunterladen</button>
+      <button type="button" class="primary">Herunterladen</button>
     </div>
     <p class="info"></p>
     <p class="note" hidden></p>`;
@@ -548,6 +560,7 @@ function renderCard(logo) {
   // Infos
   const ratio = logo.box.w / logo.box.h;
   $('.meta', el).textContent = `Seitenverhältnis ${ratioText(ratio)}`;
+  $('.row .primary', el).textContent = `${settings.format.toUpperCase()} herunterladen`;
   $('.adj', el).textContent = `${Math.round(logo.adjust * 100)} %`;
   const s = r.scale;
   const lw = r.dw / s, lh = r.dh / s, left = r.dx / s, top = r.dy / s;
@@ -649,7 +662,7 @@ function removeLogo(logo) {
 
 function fileName(logo) {
   const base = logo.name.replace(/\.[^.]+$/, '').replace(/[^\w\-äöüÄÖÜß ]+/g, '_').trim() || 'logo';
-  return `${base}_${settings.W}x${settings.H}${settings.scale > 1 ? '@2x' : ''}.png`;
+  return `${base}_${settings.W}x${settings.H}${settings.scale > 1 ? '@2x' : ''}.${settings.format}`;
 }
 
 function download(logo) {
@@ -664,7 +677,7 @@ function download(logo) {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     resolve();
-  }, 'image/png'));
+  }, settings.format === 'jpg' ? 'image/jpeg' : 'image/png', 0.95));
 }
 
 async function downloadAll() {
